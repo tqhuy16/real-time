@@ -9,6 +9,7 @@ const ChatPage = () => {
   const urlBackEnd = process.env.REACT_APP_URL_API;
   const location = useLocation();
   const chatRoom = useRef(location.state.chatRoom)
+  const userName = useRef(location.state.userName)
   const socketRef = useRef();
   useEffect(() => {
     //connect to backend
@@ -16,13 +17,18 @@ const ChatPage = () => {
     //get Id from socket Backend
     socketRef.current.on('idUser', data => {
       setIdUser(data)
+      socketRef.current.emit('userJoin', { userName :userName.current, chatRoom: chatRoom.current })
+
+      //gui su kien join room chat
       socketRef.current.emit('join', chatRoom.current)
     })
-
+    socketRef.current.on('notiJoin', data => {console.log(data)})
     socketRef.current.on('sendDataServer', data => {
       setListComment(oldList => [...oldList, data])
     })
+    // socketRef.current.emit('leaveInfo', userName.current)
   }, [])
+
   const handlerComment = (e) => {
     e.preventDefault()
     if(!message) {
@@ -31,7 +37,9 @@ const ChatPage = () => {
     const msgInfo = {
       message,
       idUser,
-      chatRoom: chatRoom.current
+      chatRoom: chatRoom.current,
+      userName: userName.current,
+      timeComment: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
     }
     socketRef.current.emit('sendDataClient', msgInfo)
     setMessage('')
@@ -40,8 +48,9 @@ const ChatPage = () => {
     <div className="box-chat">
       <div className="room-name"> Chat Room: {chatRoom.current}</div>
       <div className="box-chat_message">
-        {listComment.map((cmt, idx) => <div key={idx} className={`${cmt.idUser === idUser ? 'your-message' : 'other-people'} chat-item`}>
-          {cmt.message}
+        {listComment.map((cmt, idx) => 
+        <div key={idx} className={`${cmt.idUser === idUser ? 'your-message' : 'other-people'} chat-item`}>
+          {cmt.message}-<span style={{fontWeight: "bold"}} >{`${cmt.idUser === idUser ? 'you' : cmt.userName}`}</span>-{cmt.timeComment}
         </div>)}
       </div>
 
